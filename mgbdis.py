@@ -729,6 +729,7 @@ class Symbols:
         self.symbols = dict()
         self.blocks = dict()
         self.comments = dict()
+        self.memory_symbols = []
 
     def load_sym_file(self, symbols_path):
         f = open(symbols_path, 'r')
@@ -830,11 +831,14 @@ class Symbols:
         if bank not in self.symbols:
             self.symbols[bank] = dict()
 
-        is_symbol_banked = 0x4000 <= address < 0x8000
+        is_symbol_banked = 0x4000 <= address
         if is_symbol_banked:
             self.symbols[bank][address] = label
         else:
             self.symbols[0][address] = label
+
+        if address >= 0x8000:
+            self.memory_symbols.append((bank, address, label))
 
     def get_label(self, bank, address):
         # attempt to find a banked symbol
@@ -971,6 +975,7 @@ class ROM:
             self.write_bank_asm(bank)
 
         self.copy_hardware_inc()
+        self.write_memory_asm()
         self.write_game_asm()
         self.write_makefile()
 
@@ -1009,6 +1014,61 @@ class ROM:
         copyfile(src, dest)
 
 
+    def write_memory_asm(self):
+        f = open(os.path.join(self.output_directory, 'memory.asm'), 'w')
+
+        self.write_header(f)
+
+        if len(self.symbols.memory_symbols):
+            is_first_label = True
+            last_bank = last_address = None
+
+            for bank, address, label in sorted(self.symbols.memory_symbols):
+                section_options = ''
+                if 0x8000 <= address <= 0x9fff and bank in (0, 1):
+                    section_type = 'VRAM'
+                    section_options = ' BANK[{:02x}]'.format(bank)
+                elif 0xa000 <= address <= 0xbfff and 0 <= bank <= 15:
+                    section_type = 'SRAM'
+                    section_options = ' BANK[{:02x}]'.format(bank)
+                elif 0xc000 <= address <= 0xcfff and bank == 0:
+                    section_type = 'WRAM0'
+                elif 0xd000 <= address <= 0xdfff and bank > 0:
+                    section_type = 'WRAMX'
+                    section_options = ' BANK[{:02x}]'.format(bank)
+                elif 0xfe00 <= address <= 0xfe9f and bank == 0:
+                    section_type = 'OAM'
+                elif 0xff80 <= address <= 0xfffe and bank == 0:
+                    section_type = 'HRAM'
+                else:
+                    raise Exception('Invalid RAM address {:02x}:{:04x}'.format(bank, address))
+
+                section_name = '{}_{:02x}_{:04x}'.format(section_type, bank, address)
+
+                if not is_first_label:
+                    f.write('\n')
+                if last_bank != bank or last_address != address - 1:
+                    if not is_first_label:
+                        f.write('\n')
+                    f.write('SECTION "{:s}", {:s}[${:04x}]{:s}\n'.format(
+                        section_name, section_type, address, section_options
+                    ))
+
+                comments = self.symbols.get_comments(bank)
+                if comments and address in comments:
+                    f.write('\n')
+                    f.write('\n'.join(comments[address]))
+
+                f.write('\n{}:'.format(label))
+                f.write('\n    ds 1')
+
+                last_bank = bank
+                last_address = address
+                is_first_label = False
+
+        f.close()
+
+
     def write_game_asm(self):
         path = os.path.join(self.output_directory, 'game.asm')
         f = open(path, 'w')
@@ -1035,6 +1095,8 @@ ENDM
 """)
 
         f.write('INCLUDE "hardware.inc"')
+        f.write('\nINCLUDE "memory.asm"')
+
         for bank in range(0, self.num_banks):
             f.write('\nINCLUDE "bank_{0:03x}.asm"'.format(bank))
         f.close()
@@ -1176,9 +1238,9 @@ ENDM
         f.write('\trgbgfx -d 1 -o $@ $<\n\n')
 
         if len(self.image_dependencies):
-            f.write('game.o: game.asm bank_*.asm $(IMAGE_DEPS)\n')
+            f.write('game.o: game.asm memory.asm bank_*.asm $(IMAGE_DEPS)\n')
         else:
-            f.write('game.o: game.asm bank_*.asm\n')
+            f.write('game.o: game.asm memory.asm bank_*.asm\n')
 
         parameters = []
         if self.style['disable_halt_nops']:
