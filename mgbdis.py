@@ -690,6 +690,8 @@ class Bank:
                 if chr(byte) == '"':
                     text += '\\'
                 text += chr(byte)
+            elif byte == 0x0a:
+                text += '\\n'
             else:
                 if len(text):
                     values.append('"{}"'.format(text))
