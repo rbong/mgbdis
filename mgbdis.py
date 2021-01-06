@@ -687,9 +687,9 @@ class Bank:
 
             byte = rom.data[address]
             if byte >= 0x20 and byte < 0x7F:
+                if chr(byte) == '"':
+                    text += '\\'
                 text += chr(byte)
-            elif byte == ord('"'):
-                text += '\\"'
             else:
                 if len(text):
                     values.append('"{}"'.format(text))
