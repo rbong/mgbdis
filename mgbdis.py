@@ -190,12 +190,13 @@ def apply_style_to_instructions(style, instructions):
 
 class Bank:
 
-    def __init__(self, number, symbols, style):
+    def __init__(self, number, symbols, style, banks):
         self.style = style
         self.bank_number = number
         self.blocks = dict()
         self.disassembled_addresses = set()
         self.symbols = symbols
+        self.banks = banks
 
         if number == 0:
             self.memory_base_address = 0
@@ -290,13 +291,11 @@ class Bank:
             if address not in self.disassembled_addresses:
                 return None
         else:
-            # TODO: if target address is in bank 0 then should check if that address
-            # has been disassembled in bank 0. requires access to bank 0 from
-            # other bank objects
-
             is_in_switchable_bank = 0x4000 <= address < 0x8000
             if is_in_switchable_bank and address not in self.disassembled_addresses:
                 return None
+            elif address < 0x4000 and 0 in self.banks:
+                return self.banks[0].get_label_for_jump_target(instruction_name, address)
 
         label = self.symbols.get_label(self.bank_number, address)
         if label is not None:
@@ -894,7 +893,7 @@ class ROM:
 
         self.banks = dict()
         for bank in range(0, self.num_banks):
-            self.banks[bank] = Bank(bank, self.symbols, style)
+            self.banks[bank] = Bank(bank, self.symbols, style, self.banks)
 
     def load(self):
         if os.path.isfile(self.rom_path):
