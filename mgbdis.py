@@ -1038,7 +1038,6 @@ class ROM:
                     section_type = 'WRAM0'
                 elif 0xd000 <= address <= 0xdfff and bank > 0:
                     section_type = 'WRAMX'
-                    section_options = ' BANK[{:02x}]'.format(bank)
                 elif 0xfe00 <= address <= 0xfe9f and bank == 0:
                     section_type = 'OAM'
                 elif 0xff80 <= address <= 0xfffe and bank == 0:
