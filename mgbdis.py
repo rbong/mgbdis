@@ -612,7 +612,7 @@ class Bank:
                     self.append_output(self.format_comments(comments[address]))
 
             instruction_bytes = rom.data[pc:pc + length]
-            self.append_output(self.format_instruction(instruction_name, operand_values, pc_mem_address, instruction_bytes))
+            self.append_output(self.format_instruction(instruction_name, operand_values, pc_mem_address, instruction_bytes).ljust(59) + ' ; {:02x}:{:04x}'.format(self.bank_number, pc_mem_address))
 
             # add some empty lines after returns and jumps to break up the code blocks
             if instruction_name in ['ret', 'reti', 'jr', 'jp']:
