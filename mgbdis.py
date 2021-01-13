@@ -1030,7 +1030,6 @@ class ROM:
                 section_options = ''
                 if 0x8000 <= address <= 0x9fff and bank in (0, 1):
                     section_type = 'VRAM'
-                    section_options = ' BANK[{:02x}]'.format(bank)
                 elif 0xa000 <= address <= 0xbfff and 0 <= bank <= 15:
                     section_type = 'SRAM'
                     section_options = ' BANK[{:02x}]'.format(bank)
