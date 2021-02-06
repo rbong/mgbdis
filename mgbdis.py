@@ -747,9 +747,9 @@ class Symbols:
         f.close()
 
     def add_comment(self, comment):
-        split_comment = comment.split(maxsplit=2)[1:]
-        if len(split_comment) != 2:
-            return
+        split_comment = comment.split(' ', maxsplit=2)[1:]
+        if len(split_comment) == 1:
+            split_comment.append('')
 
         location, body = split_comment
         try:
@@ -760,7 +760,7 @@ class Symbols:
             # Ignore comments that don't have a location
             return
 
-        if body[-1] == '\n':
+        if len(body) and body[-1] == '\n':
             body = body[:-1]
 
         if not len(body):
