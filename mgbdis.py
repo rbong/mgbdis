@@ -681,8 +681,8 @@ class Bank:
 
                 self.append_labels_to_output(labels)
 
-            if comments and address in comments:
-                self.append_output(self.format_comments(comments[address]))
+            if comments and mem_address in comments:
+                self.append_output(self.format_comments(comments[mem_address]))
 
             byte = rom.data[address]
             if byte >= 0x20 and byte < 0x7F:
