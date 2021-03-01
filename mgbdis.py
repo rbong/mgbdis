@@ -1095,8 +1095,8 @@ ENDM
 
 """)
 
-        f.write('INCLUDE "hardware.inc"')
-        f.write('\nINCLUDE "memory.asm"')
+        f.write('INCLUDE "hardware.inc"\n')
+        f.write('\nINCLUDE "memory.asm"\n')
 
         for bank in range(0, self.num_banks):
             f.write('\nINCLUDE "bank_{0:03x}.asm"'.format(bank))
